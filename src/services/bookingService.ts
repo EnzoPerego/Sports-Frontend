@@ -60,21 +60,36 @@ class BookingService {
     method: string, 
     coupon?: string
   ): Promise<{ payment_id: number; status: string }> {
-    const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/checkout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        method,
-        coupon,
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
-    if (!response.ok) {
-      throw new Error('Failed to checkout booking');
+    try {
+      const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          method,
+          coupon,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to checkout booking: ${response.status} ${errorText}`);
+      }
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Checkout timeout. Por favor, tente novamente.');
+      }
+      throw error;
     }
-    return response.json();
   }
 
   async getQuote(courtId: number, slotId: number, extras?: string[]): Promise<Quote> {

@@ -26,9 +26,9 @@ export const BookingFlow: React.FC = () => {
   const handlePaymentSubmit = async (method: string, coupon?: string) => {
     if (!state.selectedCourt || !state.selectedSlot || !state.quote) return;
 
-    try {
-      updateState({ isLoading: true, error: undefined });
+    updateState({ isLoading: true, error: undefined });
 
+    try {
       // Criar booking
       const bookingResult = await bookingService.createBooking(
         state.selectedCourt.id,
@@ -38,15 +38,33 @@ export const BookingFlow: React.FC = () => {
       );
 
       // Fazer checkout
-      await bookingService.checkoutBooking(
-        bookingResult.booking_id,
-        method,
-        coupon
-      );
+      try {
+        await bookingService.checkoutBooking(
+          bookingResult.booking_id,
+          method,
+          coupon
+        );
+      } catch (checkoutError) {
+        // Se checkout falhar, ainda mostra o booking criado
+        console.error('Checkout error:', checkoutError);
+        updateState({ 
+          error: 'Reserva criada, mas pagamento falhou. Tente novamente mais tarde.',
+          isLoading: false 
+        });
+        // Buscar booking mesmo assim para mostrar
+        try {
+          const updatedBooking = await bookingService.getBooking(bookingResult.booking_id);
+          setBooking(updatedBooking);
+        } catch {
+          // Ignora erro ao buscar booking
+        }
+        return;
+      }
 
       // Buscar booking atualizado
       const updatedBooking = await bookingService.getBooking(bookingResult.booking_id);
       setBooking(updatedBooking);
+      updateState({ isLoading: false });
 
     } catch (error) {
       updateState({ 
