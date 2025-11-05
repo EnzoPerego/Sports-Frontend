@@ -48,14 +48,28 @@ export const ExtrasForm: React.FC<ExtrasFormProps> = ({
     };
 
     fetchQuote();
-  }, [courtId, slotId, selectedExtras, onQuoteUpdate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courtId, slotId, selectedExtras]);
 
-  const handleExtraToggle = (extraId: string) => {
+  const handleExtraToggle = async (extraId: string) => {
     const newExtras = selectedExtras.includes(extraId)
       ? selectedExtras.filter(id => id !== extraId)
       : [...selectedExtras, extraId];
     
+    // Atualiza os extras primeiro
     onExtrasChange(newExtras);
+    
+    // Busca o quote atualizado imediatamente
+    try {
+      setLoading(true);
+      const quoteData = await bookingService.getQuote(courtId, slotId, newExtras);
+      setQuote(quoteData);
+      onQuoteUpdate(quoteData);
+    } catch (error) {
+      console.error('Error fetching quote:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNotesChange = (value: string) => {
