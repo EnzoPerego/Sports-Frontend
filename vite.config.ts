@@ -13,12 +13,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/agenda/, '')
       },
       '/api/booking': {
-        target: 'http://18.231.197.236:8082',
+        target: 'http://18.231.197.236:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/booking/, '')
       },
       '/api/payment': {
-        target: 'http://18.231.197.236:8083',
+        target: 'http://18.231.197.236:8082',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/payment/, '')
       }
